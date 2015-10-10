@@ -10,8 +10,8 @@ home = os.environ.get('HOME')
 def test_connection(s):
     try:
         resp = urllib.urlopen("http://" + s.ip + "/")
-        assert resp is not None, "connected to server"
-        assert re.search(r'\bnginx\b', resp.info()['Server']), "http server is nginx"
+        assert resp is not None, "Failed to connect to server"
+        assert re.search(r'\bnginx\b', resp.info()['Server']), "Invalid Server header in http response"
     except Exception as e:
         assert False, str(e)
 
@@ -27,10 +27,10 @@ def test_tree(s):
     )
 
     checks = {
-        '-d': 'exists',
-        '-r': 'has read perms',
-        '-w': 'has write perms',
-        '-x': 'has search perms',
+        '-d': 'does not exists',
+        '-r': 'has no read perms',
+        '-w': 'has no write perms',
+        '-x': 'has no search perms',
     }
 
     try:
@@ -46,11 +46,11 @@ def test_get(s):
     try:
         data = str(random.random())
         cmd = 'echo -n {0} > {1}/web/public/test.html'.format(data, home)
-        assert s.run(cmd).succeeded, "{0}/web/public/test.html created".format(home)
+        assert s.run(cmd).succeeded, "Failed to create {0}/web/public/test.html".format(home)
         url = "http://" + s.ip + "/test.html"
         resp = urllib.urlopen(url)
-        assert resp.getcode() == 200, "server answered 200 OK for " + url
-        assert resp.read() == data, "server returned content of test.html"
+        assert resp.getcode() == 200, "Not-200 server response for " + url
+        assert resp.read() == data, "Server returned unexpected content instead of public/test.html"
     except Exception as e:
         assert False, str(e)
 
@@ -58,7 +58,7 @@ def test_get_noext(s):
     try:
         url = "http://" + s.ip + "/"
         resp = urllib.urlopen(url)
-        assert resp.getcode() == 404, "server answered 404 NotFound for " + url
+        assert resp.getcode() == 404, "Server did not return 404 for " + url
     except Exception as e:
         assert False, str(e)
 
@@ -69,8 +69,8 @@ def test_get_upload(s):
         assert s.run(cmd).succeeded, "{0}/web/uploads/test.html created".format(home)
         url = "http://" + s.ip + "/uploads/test.html"
         resp = urllib.urlopen(url)
-        assert resp.getcode() == 200, "server answered 200 OK for " + url
-        assert resp.read() == data, "server returned content of uploads/test.html"
+        assert resp.getcode() == 200, "Server did not return 200 for " + url
+        assert resp.read() == data, "Server returned unexpected content instead of uploads/test.html"
     except Exception as e:
         raise
         assert False, str(e)
