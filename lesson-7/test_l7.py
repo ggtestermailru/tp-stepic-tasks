@@ -4,7 +4,8 @@ import re
 import random
 import os
 
-home = os.environ.get('HOME', '/home/box')
+home = os.environ.get('HOME')
+#home = '/home/box'
 
 def test_connection(s):
     try:
