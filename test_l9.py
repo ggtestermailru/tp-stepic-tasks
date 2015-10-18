@@ -4,8 +4,7 @@ import re
 import random
 import os
 
-home = os.environ.get('HOME')
-#home = '/home/box'
+home = '/home/box'
 
 def test_project_structure(s):
     try:
@@ -99,7 +98,7 @@ sudo /usr/sbin/nginx -c /etc/nginx/nginx.conf
 sudo /etc/init.d/nginx restart
 
 (cd /home/box/web && django-admin startproject ask)
-(cd /home/box/web/ask && ./manage.py startapp qa)
+(cd /home/box/web/ask && python2.7 manage.py startapp qa)
 
 cat > /home/box/web/ask/ask/urls.py <<EOC
 from django.conf.urls import patterns, include, url

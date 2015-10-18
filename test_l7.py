@@ -4,8 +4,7 @@ import re
 import random
 import os
 
-home = os.environ.get('HOME')
-#home = '/home/box'
+home = '/home/box'
 
 def test_connection(s):
     try:
@@ -66,7 +65,8 @@ def test_get_upload(s):
     try:
         data = str(random.random())
         cmd = 'echo -n {0} > {1}/web/uploads/test.html'.format(data, home)
-        assert s.run(cmd).succeeded, "{0}/web/uploads/test.html created".format(home)
+        suc = s.run(cmd)
+        assert suc.succeeded, "{0}/web/uploads/test.html created".format(home)
         url = "http://" + s.ip + "/uploads/test.html"
         resp = urllib.urlopen(url)
         assert resp.getcode() == 200, "Server did not return 200 for " + url

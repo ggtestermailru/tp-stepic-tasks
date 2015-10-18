@@ -4,8 +4,7 @@ import re
 import random
 import os
 
-home = os.environ.get('HOME')
-#home = '/home/box'
+home = '/home/box'
 
 def test_file_compile(s):
     try:
