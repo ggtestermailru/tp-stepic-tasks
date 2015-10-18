@@ -6,7 +6,9 @@ import os
 
 home = '/home/box'
 
-def check(res):
+def proxy(s, cmd):
+    cmd = 'PYTHONPATH=/home/box/web/ask/ python2.7 ' + cmd + ' 2>&1'
+    res = s.run(cmd)
     if res.succeeded:
         msgs = re.findall('^(?!ERROR|FAIL)^\w+:\s*(.*)\s*$', res, flags=re.M)
         if len(msgs) > 0:
@@ -15,17 +17,13 @@ def check(res):
         raise Exception(res)
 
 def test_models(s):
-    res = s.run('python2.7 test_l11_server.py TestModels 2>&1')
-    check(res)
+    proxy('test_l11_server.py TestModels')
 
 def test_profile(s):
-    res = s.run('python2.7 test_l11_server.py TestProfile 2>&1')
-    check(res)
+    proxy('test_l11_server.py TestProfile')
 
 def test_question(s):
-    res = s.run('python2.7 test_l11_server.py TestQuestion 2>&1')
-    check(res)
+    proxy('test_l11_server.py TestQuestion')
 
 def test_answer(s):
-    res = s.run('python2.7 test_l11_server.py TestAnswer 2>&1')
-    check(res)
+    proxy('test_l11_server.py TestAnswer')
