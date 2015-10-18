@@ -1,5 +1,8 @@
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'ask.settings'
 from django.db.models.fields import FieldDoesNotExist
-from django.db.models.fields import CharField, TextField, IntegerField, ImageField
+from django.db.models.fields import CharField, TextField, IntegerField
+from django.db.models.fields.files import ImageField
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 
 import unittest
