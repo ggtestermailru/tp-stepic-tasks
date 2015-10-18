@@ -49,8 +49,6 @@ def test_content_nginx(s):
 
 
 '''
-sudo apt-get update
-sudo apt-get install -y nginx curl gunicorn
 mkdir -p /home/box/web/public
 mkdir -p /home/box/web/public/js
 mkdir -p /home/box/web/public/css

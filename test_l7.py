@@ -77,9 +77,6 @@ def test_get_upload(s):
 
 
 '''
-sudo apt-get update
-sudo apt-get install -y nginx
-sudo apt-get install -y curl
 mkdir -p /home/box/web/public
 mkdir -p /home/box/web/public/js
 mkdir -p /home/box/web/public/css
