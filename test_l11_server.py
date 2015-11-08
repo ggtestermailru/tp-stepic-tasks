@@ -1,12 +1,14 @@
 import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'ask.settings'
-from django.db.models.fields import FieldDoesNotExist
-from django.db.models.fields import CharField, TextField, IntegerField
-from django.db.models.fields.files import ImageField
-from django.db.models.fields.related import ForeignKey, ManyToManyField
-
 import unittest
 import sys
+sys.path.append('/home/box/web/ask')
+os.environ['DJANGO_SETTINGS_MODULE'] = 'ask.settings'
+from django.db.models.fields import FieldDoesNotExist
+from django.db.models.fields import CharField, TextField, IntegerField, DateField
+from django.db.models.fields.files import ImageField
+from django.db.models.fields.related import ForeignKey, ManyToManyField
+from django.contrib.auth.models import User
+
 
 
 class TestModels(unittest.TestCase):
@@ -52,12 +54,29 @@ class TestQuestion(unittest.TestCase):
         except FieldDoesNotExist:
             assert False, "author field does not exist in Question model"
         assert isinstance(author, ForeignKey), "author field is not ForeignKey"
-        assert author.related_field.model == User, "author field does not refer User model"
+        assert author.related.parent_model == User, "author field does not refer User model"
+        try:
+            likes = Question._meta.get_field('likes')
+        except FieldDoesNotExist:
+            assert False, "likes field does not exist in Question model"
+        assert isinstance(likes, ManyToManyField), "likes field is not ManyToManyField"
+        assert likes.related.parent_model == User, "likes field does not refer User model"
+
+
+class TestQuestionManager(unittest.TestCase):
+    def test_question_manager(self):
+        from qa.models import Question
+        from qa.models import QuestionManager
+        mgr = Question.objects
+        assert isinstance(mgr, QuestionManager), "Question.objects is not an QuestionManager"
+        assert hasattr(mgr, 'new'), "QuestionManager has no 'new' queryset method"
+        assert hasattr(mgr, 'hot'), "QuestionManager has no 'hot' queryset method"
 
 
 class TestAnswer(unittest.TestCase):
     def test_answer(self):
         from qa.models import Answer
+        from qa.models import Question
         try:
             text = Answer._meta.get_field('text')
         except FieldDoesNotExist:
@@ -68,7 +87,7 @@ class TestAnswer(unittest.TestCase):
         except FieldDoesNotExist:
             assert False, "question field does not exist in Answer model"
         assert isinstance(question, ForeignKey), "question field is not ForeignKey"
-        assert author.related_field.model == Question, "question field does not refer Question model"
+        assert question.related.parent_model == Question, "question field does not refer Question model"
         try:
             added_at = Answer._meta.get_field('added_at')
         except FieldDoesNotExist:
@@ -79,7 +98,7 @@ class TestAnswer(unittest.TestCase):
         except FieldDoesNotExist:
             assert False, "author field does not exist in Answer model"
         assert isinstance(author, ForeignKey), "author field is not ForeignKey"
-        assert author.related_field.model == User, "author field does not refer User model"
+        assert author.related.parent_model == User, "author field does not refer User model"
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(globals().get(sys.argv[1]))
