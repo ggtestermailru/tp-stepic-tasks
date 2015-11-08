@@ -55,7 +55,7 @@ def test_get(s):
 
 def test_get_noext(s):
     try:
-        url = "http://" + s.ip + "/"
+        url = "http://" + s.ip + "/some/never/existing/url"
         resp = urllib.urlopen(url)
         assert resp.getcode() == 404, "Server did not return 404 for " + url
     except Exception as e:

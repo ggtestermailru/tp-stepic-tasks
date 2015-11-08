@@ -24,8 +24,8 @@ def test_project_structure(s):
 
 def test_connection(s):
     try:
-        resp = urllib.urlopen("http://" + s.ip + ":8080/")
-        assert resp is not None, "failed to connect to port gunicorn (port 8080)"
+        resp = urllib.urlopen("http://" + s.ip + ":8000/")
+        assert resp is not None, "failed to connect to port gunicorn (port 8000)"
     except Exception as e:
         assert False, str(e)
 
@@ -42,9 +42,9 @@ def test_content_gunicorn(s):
             '/new/',
         ]
         for u in urls:
-            u = "http://{0}:8080{1}".format(s.ip, u)
+            u = "http://{0}:8000{1}".format(s.ip, u)
             resp = urllib.urlopen(u)
-            assert resp is not None, "failed to connect to port gunicorn (port 8080)"
+            assert resp is not None, "failed to connect to port gunicorn (port 8000)"
             assert resp.getcode() == 200, "url {0} does not returned HTTP 200".format(u)
             body = resp.read()
             assert body == 'OK', "url {0} does not returned content 'OK'".format(u)
@@ -53,8 +53,8 @@ def test_content_gunicorn(s):
 
 def test_content_404(s):
     try:
-        resp = urllib.urlopen("http://{0}:8080/blablabla/".format(s.ip))
-        assert resp is not None, "failed to connect to port gunicorn (port 8080)"
+        resp = urllib.urlopen("http://{0}:8000/blablabla/".format(s.ip))
+        assert resp is not None, "failed to connect to port gunicorn (port 8000)"
         assert resp.getcode() == 404, "URL /blabla....bla/ was expected to return 404, but returned {0}".format(resp.getcode())
     except Exception as e:
         assert False, str(e)
@@ -63,7 +63,7 @@ def test_nginx(s):
     try:
         u = "http://{0}/".format(s.ip)
         resp = urllib.urlopen(u)
-        assert resp is not None, "failed to connect to port gunicorn (port 8080)"
+        assert resp is not None, "failed to connect to port gunicorn (port 8000)"
         assert resp.getcode() == 200, "url {0} does not returned HTTP 200".format(u)
         body = resp.read()
         assert body == 'OK', "url {0} does not returned content 'OK'".format(u)

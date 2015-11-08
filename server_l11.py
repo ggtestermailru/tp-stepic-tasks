@@ -15,16 +15,13 @@ class TestModels(unittest.TestCase):
     def test_import(self):
         import qa.models
 
-
-class TestProfile(unittest.TestCase):
-    def test_profile(self):
-        from qa.models import Profile
+class TestUser(unittest.TestCase):
+    def test_user(self):
+        user = User(username='x', password='y')
         try:
-            avatar = Profile._meta.get_field('avatar')
-        except FieldDoesNotExist:
-            assert False, "avatar field does not exist in Profile model"
-        assert isinstance(avatar, ImageField), "avatar field is not ImageField"
-
+            user.save()
+        except:
+            assert False, "Failed to create user model, check db connection"
 
 class TestQuestion(unittest.TestCase):
     def test_question(self):
@@ -61,6 +58,12 @@ class TestQuestion(unittest.TestCase):
             assert False, "likes field does not exist in Question model"
         assert isinstance(likes, ManyToManyField), "likes field is not ManyToManyField"
         assert likes.related.parent_model == User, "likes field does not refer User model"
+        user, _ = User.objects.get_or_create(username='x', password='y')
+        try:
+            question = Question(title='qwe', text='qwe', author=user)
+            question.save()
+        except:
+            assert False, "Failed to create question model, check db connection"
 
 
 class TestQuestionManager(unittest.TestCase):
@@ -99,6 +102,13 @@ class TestAnswer(unittest.TestCase):
             assert False, "author field does not exist in Answer model"
         assert isinstance(author, ForeignKey), "author field is not ForeignKey"
         assert author.related.parent_model == User, "author field does not refer User model"
+        user, _ = User.objects.get_or_create(username='x', password='y')
+        question = Question.objects.create(title='qwe', text='qwe', author=user)
+        try:
+            answer = Answer(text='qwe', question=question, author=user)
+            question.save()
+        except:
+            assert False, "Failed to create answer model, check db connection"
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(globals().get(sys.argv[1]))
