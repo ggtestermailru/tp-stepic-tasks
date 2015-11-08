@@ -74,7 +74,7 @@ class Answer(models.Model):
     added_at = models.DateTimeField()
     question = models.ForeignKey(Question)
     author = models.ForeignKey(User)
-EOC 
+EOC
 
 #cat > /home/box/web/ask/qa/views.py <<EOC
 #from django.shortcuts import render
@@ -94,5 +94,6 @@ CONFIG = {
     ),
 }
 EOC
+
 sudo ln -s /home/box/web/etc/django /etc/gunicorn.d/django
 sudo /etc/init.d/gunicorn restart
