@@ -8,6 +8,7 @@ mkdir -p /home/box/web/public/css
 mkdir -p /home/box/web/public/img
 mkdir -p /home/box/web/uploads/
 mkdir -p /home/box/web/etc/
+mkdir -p /home/box/web/templates/
 
 # nginx configuration
 cat > /home/box/web/etc/nginx.conf <<EOC
@@ -91,6 +92,9 @@ DATABASES = {
         'PASSWORD': 'test',
     }
 }
+TEMPLATE_DIRS = [
+    '/home/box/web/templates/',
+]
 INSTALLED_APPS = ('qa',) + INSTALLED_APPS
 EOC
 rm /home/box/web/ask/ask/settings.pyc   #  cache for some reason..
@@ -101,10 +105,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
 
-class ModelManager(models.Manager):
+class QuestionManager(models.Manager):
     def new(self):
         return self.order_by('-added_at')
-    def hot(self):
+    def popular(self):
         return self.order_by('-rating')
 
 class Question(models.Model):
@@ -114,6 +118,7 @@ class Question(models.Model):
     author = models.ForeignKey(User)
     likes = models.ManyToManyField(User, related_name='liked_question_set')
     rating = models.IntegerField(default=0)
+    objects = QuestionManager()
 
 class Answer(models.Model):
     text = models.TextField()
@@ -128,24 +133,89 @@ python /home/box/web/ask/manage.py syncdb --noinput
 # urls.py
 cat > /home/box/web/ask/ask/urls.py <<EOC
 from django.conf.urls import patterns, include, url
-from qa.views import test
+from qa.views import test, new_questions, popular_questions, one_question
 urlpatterns = patterns('',
-    url(r'^$', test, name='home'),
+    url(r'^$', new_questions, name='home'),
     url(r'login/$', test, name='login'),
     url(r'signup/$', test, name='signup'),
     url(r'ask/$', test, name='ask'),
-    url(r'popular/$', test, name='popular'),
-    url(r'new/$', test, name='new'),
-    url(r'question/(?P<id>\d+)/$', test, name='question'),
+    url(r'popular/$', popular_questions, name='popular'),
+    url(r'new/$', new_questions, name='new'),
+    url(r'question/(?P<id>\d+)/$', one_question, name='question'),
 )
 EOC
 
 # views
 cat > /home/box/web/ask/qa/views.py <<EOC
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
+from django.core.paginator import Paginator, EmptyPage
+
+from qa.models import Question
+
+def paginate(request, qs):
+    try:
+        limit = int(request.GET.get('limit', 10))
+    except ValueError:
+        limit = 10
+    if limit > 100:
+        limit = 10
+    try:
+        page = int(request.GET.get('page', 1))
+    except ValueError:
+        raise Http404
+    paginator = Paginator(qs, limit)
+    try:
+        page = paginator.page(page)
+    except EmptyPage:
+        page = paginator.page(paginator.num_pages)
+    return page
+
 def test(request, *args, **kwargs):
     return HttpResponse('OK')
+
+def new_questions(request):
+    qs = Question.objects.new()
+    page = paginate(request, qs)
+    return render(request, 'list.html', { 'page': page, 'title': 'new questions' })
+
+def popular_questions(request):
+    qs = Question.objects.popular()
+    page = paginate(request, qs)
+    return render(request, 'list.html', { 'page': page, 'title': 'popular questions' })
+
+def one_question(request, id):
+    question = get_object_or_404(Question, pk=id)
+    qs = question.answer_set.all()
+    page = paginate(request, qs)
+    return render(request, 'question.html', { 'question': question, 'page': page })
+EOC
+
+# templates
+cat > /home/box/web/templates/list.html <<EOC
+<!DOCTYPE html>
+<html><body>
+<h1>{{ title }}</h1>
+{% for q in page.object_list %}
+    <div>
+        <a href="/question/{{ q.id }}/">{{ q.title }}</a>
+        <p>{{ q.text }}</p>
+    </div>
+{% endfor %}
+</body></html>
+EOC
+
+cat > /home/box/web/templates/question.html <<EOC
+<!DOCTYPE html>
+<html><body>
+<h1>{{ question.title }}</h1>
+<p>{{ question.text }}</h1>
+{% for a in page.object_list %}
+    <div>
+        <p>{{ a.text }}</p>
+    </div>
+{% endfor %}
+</body></html>
 EOC
 
 sudo /etc/init.d/gunicorn restart

@@ -73,7 +73,7 @@ class TestQuestionManager(unittest.TestCase):
         mgr = Question.objects
         assert isinstance(mgr, QuestionManager), "Question.objects is not an QuestionManager"
         assert hasattr(mgr, 'new'), "QuestionManager has no 'new' queryset method"
-        assert hasattr(mgr, 'hot'), "QuestionManager has no 'hot' queryset method"
+        assert hasattr(mgr, 'popular'), "QuestionManager has no 'popular' queryset method"
 
 
 class TestAnswer(unittest.TestCase):

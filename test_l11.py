@@ -25,5 +25,8 @@ def test_user(s):
 def test_question(s):
     proxy(s, 'server_l11.py TestQuestion')
 
+def test_question_manager(s):
+    proxy(s, 'server_l11.py TestQuestionManager')
+
 def test_answer(s):
     proxy(s, 'server_l11.py TestAnswer')
