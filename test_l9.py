@@ -1,8 +1,8 @@
 import stepic_pytest.fixtures
 import urllib
-import re
 import random
 import os
+import re
 
 home = '/home/box'
 
@@ -45,9 +45,10 @@ def test_content_gunicorn(s):
             u = "http://{0}:8000{1}".format(s.ip, u)
             resp = urllib.urlopen(u)
             assert resp is not None, "failed to connect to port gunicorn (port 8000)"
-            assert resp.getcode() == 200, "url {0} does not returned HTTP 200".format(u)
+            if not re.search(r'/question/', u):
+                assert resp.getcode() == 200, "url {0} does not returned HTTP 200".format(u)
             body = resp.read()
-            assert body == 'OK', "url {0} does not returned content 'OK'".format(u)
+            assert re.search(r'\w', body), "url {0} : body is empty {1}".format(u, body)
     except Exception as e:
         assert False, str(e)
 
@@ -64,9 +65,9 @@ def test_nginx(s):
         u = "http://{0}/".format(s.ip)
         resp = urllib.urlopen(u)
         assert resp is not None, "failed to connect to port gunicorn (port 8000)"
-        assert resp.getcode() == 200, "url {0} does not returned HTTP 200".format(u)
+        assert resp.getcode() == 200, "url {0} does not returned HTTP 200 {1}".format(u, body)
         body = resp.read()
-        assert body == 'OK', "url {0} does not returned content 'OK'".format(u)
+        assert re.search(r'\w', body), "url {0} : body is empty".format(u)
     except Exception as e:
         assert False, str(e)
 

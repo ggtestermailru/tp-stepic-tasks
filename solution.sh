@@ -145,6 +145,15 @@ urlpatterns = patterns('',
 )
 EOC
 
+# forms
+cat > /home/box/web/ask/qa/forms.py <<EOC
+from django import forms
+
+class AskForm(forms.Form):
+    title = forms.CharField(max_length=100)
+    text = forms.CharField(widget=forms.Textarea)
+EOC
+
 # views
 cat > /home/box/web/ask/qa/views.py <<EOC
 from django.shortcuts import render, get_object_or_404
