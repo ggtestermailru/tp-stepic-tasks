@@ -115,7 +115,7 @@ class Question(models.Model):
     title = models.CharField(max_length=100)
     text = models.TextField()
     added_at = models.DateTimeField(default=datetime.now)
-    author = models.ForeignKey(User)
+    author = models.ForeignKey(User, blank=True, null=True)
     likes = models.ManyToManyField(User, related_name='liked_question_set')
     rating = models.IntegerField(default=0)
     objects = QuestionManager()
@@ -124,7 +124,7 @@ class Answer(models.Model):
     text = models.TextField()
     added_at = models.DateTimeField(default=datetime.now)
     question = models.ForeignKey(Question)
-    author = models.ForeignKey(User)
+    author = models.ForeignKey(User, blank=True, null=True)
 EOC
 
 # sync down
@@ -133,12 +133,13 @@ python /home/box/web/ask/manage.py syncdb --noinput
 # urls.py
 cat > /home/box/web/ask/ask/urls.py <<EOC
 from django.conf.urls import patterns, include, url
-from qa.views import test, new_questions, popular_questions, one_question
+from qa.views import test, new_questions, popular_questions, one_question, ask, answer
 urlpatterns = patterns('',
     url(r'^$', new_questions, name='home'),
     url(r'login/$', test, name='login'),
     url(r'signup/$', test, name='signup'),
-    url(r'ask/$', test, name='ask'),
+    url(r'ask/$', ask, name='ask'),
+    url(r'answer/$', answer, name='anwer'),
     url(r'popular/$', popular_questions, name='popular'),
     url(r'new/$', new_questions, name='new'),
     url(r'question/(?P<id>\d+)/$', one_question, name='question'),
@@ -148,10 +149,13 @@ EOC
 # forms
 cat > /home/box/web/ask/qa/forms.py <<EOC
 from django import forms
+from qa.models import Question, Answer
 
 class AskForm(forms.Form):
     title = forms.CharField(max_length=100)
     text = forms.CharField(widget=forms.Textarea)
+    def save(self):
+        return Question.objects.create(title=self.cleaned_data['title'], text=self.cleaned_data['text'])
 
 class AnswerForm(forms.Form):
     text = forms.CharField()
@@ -162,10 +166,11 @@ EOC
 # views
 cat > /home/box/web/ask/qa/views.py <<EOC
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage
 
-from qa.models import Question
+from qa.models import Question, Answer
+from qa.forms import AskForm, AnswerForm
 
 def paginate(request, qs):
     try:
@@ -203,6 +208,20 @@ def one_question(request, id):
     qs = question.answer_set.all()
     page = paginate(request, qs)
     return render(request, 'question.html', { 'question': question, 'page': page })
+
+def ask(request):
+    if request.method == 'POST':
+        form = AskForm(request.POST)
+        if form.is_valid():
+            q = form.save()
+            return HttpResponseRedirect('/question/' + str(q.pk) + '/')
+    else:
+        form = AskForm()
+    return render(request, 'ask.html', { 'form': form })
+
+def answer(request):
+    pass
+
 EOC
 
 # templates
@@ -229,6 +248,20 @@ cat > /home/box/web/templates/question.html <<EOC
         <p>{{ a.text }}</p>
     </div>
 {% endfor %}
+</body></html>
+EOC
+
+cat > /home/box/web/templates/ask.html <<EOC
+<!DOCTYPE html>
+<html><body>
+<h1>ASK</h1>
+<form method="POST" action="/ask/">
+<table>
+{% csrf_token %}
+{{ form.as_table }}
+<button type="submit">SUBMIT</button>
+</table>
+</form>
 </body></html>
 EOC
 
