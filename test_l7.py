@@ -1,78 +1,82 @@
 import stepic_pytest.fixtures
 import urllib
-import re
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import random
 import os
+import re
 
 home = '/home/box'
 
-def test_connection(s):
+class DaHandler(urllib2.HTTPRedirectHandler):
+    def handle(self, req, fp, code, msg, headers):
+        infourl = urllib.addinfourl(fp, headers, req.get_full_url())
+        infourl.status = code
+        infourl.code = code
+        return infourl
+    http_error_300 = handle
+    http_error_301 = handle
+    http_error_302 = handle
+    http_error_303 = handle
+    http_error_307 = handle
+    http_error_401 = handle
+    http_error_403 = handle
+    http_error_404 = handle
+    http_error_500 = handle
+    http_error_502 = handle
+    http_error_504 = handle
+
+urllib2.install_opener(urllib2.build_opener(DaHandler))
+
+def test_project_structure(s):
     try:
-        resp = urllib.urlopen("http://" + s.ip + "/")
-        assert resp is not None, "Failed to connect to server"
-        assert re.search(r'\bnginx\b', resp.info()['Server']), "Invalid Server header in http response"
+        checks = [
+            ('public', '-d', 'does not exists or not directory'),
+            ('public/img', '-d', 'does not exists or not directory'),
+            ('public/css', '-d', 'does not exists or not directory'),
+            ('public/js', '-d', 'does not exists or not directory'),
+            ('uploads', '-d', 'does not exists or not directory'),
+            ('etc', '-d', 'does not exists or not directory'),
+        ]
+        for c in checks:
+            cmd = 'test {0} {1}/web/{2}'.format(c[1], home, c[0])
+            assert s.run(cmd).succeeded, "{0}/web/{1} {2}".format(home, c[0], c[2])
     except Exception as e:
         assert False, str(e)
 
-
-def test_tree(s):
-    dirs = (
-        'web',
-        'web/public',
-        'web/public/css',
-        'web/public/js',
-        'web/public/img',
-        'web/uploads',
-    )
-
-    checks = {
-        '-d': 'does not exists',
-        '-r': 'has no read perms',
-        '-w': 'has no write perms',
-        '-x': 'has no search perms',
-    }
-
+def test_404(s):
     try:
-        for d in dirs:
-            for c, p in checks.items():
-                cmd = 'test {0} {1}/{2}'.format(c, home, d)
-                expl = '{0}/{1} directory {2}'.format(home, d, p)
-                assert s.run(cmd).succeeded, expl
+        url = "http://{0}/blabla/".format(s.ip)
+        resp = urllib2.urlopen(url)
+        assert resp.getcode() == 404, url + " didn't returned 404"
     except Exception as e:
         assert False, str(e)
 
-def test_get(s):
+def test_public(s):
     try:
-        data = str(random.random())
-        cmd = 'echo -n {0} > {1}/web/public/test.html'.format(data, home)
-        assert s.run(cmd).succeeded, "Failed to create {0}/web/public/test.html".format(home)
-        url = "http://" + s.ip + "/test.html"
-        resp = urllib.urlopen(url)
-        assert resp.getcode() == 200, "Not-200 server response for " + url
-        assert resp.read() == data, "Server returned unexpected content instead of public/test.html"
+        text = "alert(1)"
+        file = "{0}/web/public/js/test.js".format(home)
+        cmd = "echo -n '{0}' > {1}".format(text, file)
+        assert s.run(cmd).succeeded, "Failed to create " + file
+        url = "http://{0}/js/test.js".format(s.ip)
+        resp = urllib2.urlopen(url)
+        assert resp.getcode() == 200, url + " didn't returned 200"
+        assert resp.read() == text, "{0} content does not match {1} content".format(url, file)
     except Exception as e:
         assert False, str(e)
 
-def test_get_noext(s):
+def test_uploads(s):
     try:
-        url = "http://" + s.ip + "/some/never/existing/url"
-        resp = urllib.urlopen(url)
-        assert resp.getcode() == 404, "Server did not return 404 for " + url
+        text = "alert(2)"
+        file = "{0}/web/uploads/test.js".format(home)
+        cmd = "echo -n '{0}' > {1}".format(text, file)
+        assert s.run(cmd).succeeded, "Failed to create " + file
+        url = "http://{0}/uploads/test.js".format(s.ip)
+        resp = urllib2.urlopen(url)
+        assert resp.getcode() == 200, url + " didn't returned 200"
+        assert resp.read() == text, "{0} content does not match {1} content".format(url, file)
     except Exception as e:
         assert False, str(e)
-
-def test_get_upload(s):
-    try:
-        data = str(random.random())
-        cmd = 'echo -n {0} > {1}/web/uploads/test.html'.format(data, home)
-        suc = s.run(cmd)
-        assert suc.succeeded, "{0}/web/uploads/test.html created".format(home)
-        url = "http://" + s.ip + "/uploads/test.html"
-        resp = urllib.urlopen(url)
-        assert resp.getcode() == 200, "Server did not return 200 for " + url
-        assert resp.read() == data, "Server returned unexpected content instead of uploads/test.html"
-    except Exception as e:
-        raise
-        assert False, str(e)
-
 

@@ -1,6 +1,9 @@
 import stepic_pytest.fixtures
 import urllib
-import urllib2
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import re
 import random
 import os

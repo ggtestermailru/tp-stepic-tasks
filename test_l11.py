@@ -1,5 +1,4 @@
 import stepic_pytest.fixtures
-import urllib
 import re
 import random
 import os
