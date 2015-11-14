@@ -1,10 +1,31 @@
 import stepic_pytest.fixtures
 import urllib
+import urllib2
 import re
 import random
 import os
 
 home = '/home/box'
+
+class DaHandler(urllib2.HTTPRedirectHandler):
+    def handle(self, req, fp, code, msg, headers):
+        infourl = urllib.addinfourl(fp, headers, req.get_full_url())
+        infourl.status = code
+        infourl.code = code
+        return infourl
+    http_error_300 = handle
+    http_error_301 = handle
+    http_error_302 = handle
+    http_error_303 = handle
+    http_error_307 = handle
+    http_error_401 = handle
+    http_error_403 = handle
+    http_error_404 = handle
+    http_error_500 = handle
+    http_error_502 = handle
+    http_error_504 = handle
+
+urllib2.install_opener(urllib2.build_opener(DaHandler))
 
 def test_file_compile(s):
     try:
@@ -17,7 +38,7 @@ def test_file_compile(s):
 
 def test_connection(s):
     try:
-        resp = urllib.urlopen("http://" + s.ip + ":8080/")
+        resp = urllib2.urlopen("http://" + s.ip + ":8080/")
         assert resp is not None, "failed to connect to port gunicorn (port 8080)"
         assert re.search(r'\bgunicorn\b', resp.info()['Server']), "Invalid Server header received from gunicorn"
     except Exception as e:
@@ -25,7 +46,7 @@ def test_connection(s):
 
 def test_content_gunicorn(s):
     try:
-        resp = urllib.urlopen("http://" + s.ip + ":8080/?x=1&x=2&y=3&y=")
+        resp = urllib2.urlopen("http://" + s.ip + ":8080/?x=1&x=2&y=3&y=")
         assert resp is not None, "failed to connect to port gunicorn (port 8080)"
         assert re.search(r'^text/plain(;|$)', resp.info()['Content-Type']), "Invalid Content-Type header (text/plain expected) received from gunicorn"
         found = set([l.strip() for l in resp.readlines() ])
@@ -36,7 +57,7 @@ def test_content_gunicorn(s):
 
 def test_content_nginx(s):
     try:
-        resp = urllib.urlopen("http://" + s.ip + "/hello/?x=1&x=2&y=3&y=")
+        resp = urllib2.urlopen("http://" + s.ip + "/hello/?x=1&x=2&y=3&y=")
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert re.search(r'\bnginx\b', resp.info()['Server']), "Invalid Server header received from nginx"
         assert re.search(r'^text/plain(;|$)', resp.info()['Content-Type']), "Invalid Content-Type header (text/plain expected) received from nginx"

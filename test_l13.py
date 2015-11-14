@@ -1,11 +1,32 @@
 import stepic_pytest.fixtures
 import urllib
+import urllib2
 import re
 import random
 import os
 from contextlib import closing
 
 home = '/home/box'
+
+class DaHandler(urllib2.HTTPRedirectHandler):
+    def handle(self, req, fp, code, msg, headers):
+        infourl = urllib.addinfourl(fp, headers, req.get_full_url())
+        infourl.status = code
+        infourl.code = code
+        return infourl
+    http_error_300 = handle
+    http_error_301 = handle
+    http_error_302 = handle
+    http_error_303 = handle
+    http_error_307 = handle
+    http_error_401 = handle
+    http_error_403 = handle
+    http_error_404 = handle
+    http_error_500 = handle
+    http_error_502 = handle
+    http_error_504 = handle
+
+urllib2.install_opener(urllib2.build_opener(DaHandler))
 
 def proxy(s, tst):
     cmd = 'PYTHONPATH={0}/web/ask/ python2.7 {0}/{1} 2>&1'.format(home, tst)
@@ -23,7 +44,7 @@ def test_init_data(s):
 def test_last_question(s):
     try:
         url = "http://" + s.ip + "/"
-        resp = urllib.urlopen(url)
+        resp = urllib2.urlopen(url)
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert str(resp.getcode()) == '200', url + " didn't returned 200"
         with closing(resp) as resp2:
@@ -35,7 +56,7 @@ def test_last_question(s):
 def test_last_pagination(s):
     try:
         url = "http://" + s.ip + "/?page=2"
-        resp = urllib.urlopen(url)
+        resp = urllib2.urlopen(url)
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert str(resp.getcode()) == '200', url + " didn't returned 200"
         with closing(resp) as resp2:
@@ -47,7 +68,7 @@ def test_last_pagination(s):
 def test_popular_question(s):
     try:
         url = "http://" + s.ip + "/popular/"
-        resp = urllib.urlopen(url)
+        resp = urllib2.urlopen(url)
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert str(resp.getcode()) == '200', url + " didn't returned 200"
         with closing(resp) as resp2:
@@ -60,7 +81,7 @@ def test_popular_question(s):
 def test_popular_question(s):
     try:
         url = "http://" + s.ip + "/popular/?page=2"
-        resp = urllib.urlopen(url)
+        resp = urllib2.urlopen(url)
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert str(resp.getcode()) == '200', url + " didn't returned 200"
         with closing(resp) as resp2:
@@ -75,7 +96,7 @@ def test_popular_question(s):
 def test_question_page(s):
     try:
         url = "http://" + s.ip + "/question/3141592/"
-        resp = urllib.urlopen(url)
+        resp = urllib2.urlopen(url)
         assert resp is not None, "failed to connect to port nginx (port 80)"
         assert str(resp.getcode()) == '200', url + " didn't returned 200"
         with closing(resp) as resp2:

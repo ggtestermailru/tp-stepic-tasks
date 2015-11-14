@@ -160,11 +160,18 @@ class AskForm(forms.Form):
         return Question.objects.create(
             title=self.cleaned_data['title'], 
             text=self.cleaned_data['text'],
+            author=getattr(self, '_user', None),
         )
 
 class AnswerForm(forms.Form):
     text = forms.CharField()
     question = forms.IntegerField()
+    def save(self):
+        return Answer.objects.create(
+            text=self.cleaned_data['text'],
+            question_id=self.cleaned_data['question'],
+            author=getattr(self, '_user', None),
+        )
 
 class SignupForm(forms.Form):
     username = forms.CharField()
@@ -198,6 +205,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage
 from django.contrib import auth
+from django.views.decorators.http import require_POST
 
 from qa.models import Question, Answer
 from qa.forms import AskForm, AnswerForm, SignupForm, LoginForm
@@ -237,11 +245,14 @@ def one_question(request, id):
     question = get_object_or_404(Question, pk=id)
     qs = question.answer_set.all()
     page = paginate(request, qs)
-    return render(request, 'question.html', { 'question': question, 'page': page })
+    form = AnswerForm(initial={'question': question.pk })
+    return render(request, 'question.html', { 'question': question, 'page': page, 'form': form })
 
 def ask(request):
     if request.method == 'POST':
         form = AskForm(request.POST)
+        if request.user.is_authenticated():
+            form._user = request.user
         if form.is_valid():
             q = form.save()
             return HttpResponseRedirect('/question/' + str(q.pk) + '/')
@@ -249,8 +260,16 @@ def ask(request):
         form = AskForm()
     return render(request, 'ask.html', { 'form': form })
 
+@require_POST
 def answer(request):
-    pass
+    form = AnswerForm(request.POST)
+    if request.user.is_authenticated():
+        form._user = request.user
+    if form.is_valid():
+        a = form.save()
+        return HttpResponseRedirect('/question/' + str(a.question.pk) + '/')
+    else:
+        return HttpResponseRedirect('/question/' + str(a.question.pk) + '/?err=1')
 
 def signup(request):
     if request.method == 'POST':
@@ -299,6 +318,15 @@ cat > /home/box/web/templates/question.html <<EOC
         <p>{{ a.text }}</p>
     </div>
 {% endfor %}
+<form method="POST" action="/answer/">
+{% if request.err %}
+<h2 style="color:red">не удалось добавить ответ</h2>
+{% endif %}
+{% csrf_token %}
+<table>
+{{ form.as_table }}
+</table>
+</form>
 </body></html>
 EOC
 
