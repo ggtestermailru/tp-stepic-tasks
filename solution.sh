@@ -133,11 +133,11 @@ python /home/box/web/ask/manage.py syncdb --noinput
 # urls.py
 cat > /home/box/web/ask/ask/urls.py <<EOC
 from django.conf.urls import patterns, include, url
-from qa.views import test, new_questions, popular_questions, one_question, ask, answer
+from qa.views import test, new_questions, popular_questions, one_question, ask, answer, signup, login
 urlpatterns = patterns('',
     url(r'^$', new_questions, name='home'),
-    url(r'login/$', test, name='login'),
-    url(r'signup/$', test, name='signup'),
+    url(r'login/$', login, name='login'),
+    url(r'signup/$', signup, name='signup'),
     url(r'ask/$', ask, name='ask'),
     url(r'answer/$', answer, name='anwer'),
     url(r'popular/$', popular_questions, name='popular'),
@@ -150,16 +150,45 @@ EOC
 cat > /home/box/web/ask/qa/forms.py <<EOC
 from django import forms
 from qa.models import Question, Answer
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 
 class AskForm(forms.Form):
     title = forms.CharField(max_length=100)
     text = forms.CharField(widget=forms.Textarea)
     def save(self):
-        return Question.objects.create(title=self.cleaned_data['title'], text=self.cleaned_data['text'])
+        return Question.objects.create(
+            title=self.cleaned_data['title'], 
+            text=self.cleaned_data['text'],
+        )
 
 class AnswerForm(forms.Form):
     text = forms.CharField()
     question = forms.IntegerField()
+
+class SignupForm(forms.Form):
+    username = forms.CharField()
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    def save(self):
+        User.objects.create_user(
+            username=self.cleaned_data['username'],
+            email=self.cleaned_data['email'],
+            password=self.cleaned_data['password'],
+        )
+        return authenticate(
+            username=self.cleaned_data['username'],
+            password=self.cleaned_data['password'],
+        )
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    def load(self):
+        return authenticate(
+            username=self.cleaned_data['username'],
+            password=self.cleaned_data['password'],
+        )
 
 EOC
 
@@ -168,9 +197,10 @@ cat > /home/box/web/ask/qa/views.py <<EOC
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage
+from django.contrib import auth
 
 from qa.models import Question, Answer
-from qa.forms import AskForm, AnswerForm
+from qa.forms import AskForm, AnswerForm, SignupForm, LoginForm
 
 def paginate(request, qs):
     try:
@@ -222,6 +252,27 @@ def ask(request):
 def answer(request):
     pass
 
+def signup(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth.login(request, user)
+            return HttpResponseRedirect('/')
+    else:
+        form = SignupForm()
+    return render(request, 'signup.html', { 'form': form })
+    
+def login(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            user = form.load()
+            auth.login(request, user)
+            return HttpResponseRedirect('/')
+    else:
+        form = LoginForm()
+    return render(request, 'login.html', { 'form': form })
 EOC
 
 # templates
@@ -256,6 +307,34 @@ cat > /home/box/web/templates/ask.html <<EOC
 <html><body>
 <h1>ASK</h1>
 <form method="POST" action="/ask/">
+<table>
+{% csrf_token %}
+{{ form.as_table }}
+<button type="submit">SUBMIT</button>
+</table>
+</form>
+</body></html>
+EOC
+
+cat > /home/box/web/templates/signup.html <<EOC
+<!DOCTYPE html>
+<html><body>
+<h1>SIGNUP</h1>
+<form method="POST" action="/signup/">
+<table>
+{% csrf_token %}
+{{ form.as_table }}
+<button type="submit">SUBMIT</button>
+</table>
+</form>
+</body></html>
+EOC
+
+cat > /home/box/web/templates/login.html <<EOC
+<!DOCTYPE html>
+<html><body>
+<h1>LOGIN</h1>
+<form method="POST" action="/login/">
 <table>
 {% csrf_token %}
 {{ form.as_table }}
